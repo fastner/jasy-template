@@ -1,135 +1,105 @@
-/*
-==================================================================================================
-  Core - JavaScript Foundation
-  Copyright 2010-2012 Zynga Inc.
-  Copyright 2012-2013 Sebastian Werner
---------------------------------------------------------------------------------------------------
-  Based on the work of:
-  Hogan.JS by Twitter, Inc.
-  https://github.com/twitter/hogan.js
-  Licensed under the Apache License, Version 2.0
-  http://www.apache.org/licenses/LICENSE-2.0
-==================================================================================================
-*/
+#
+#==================================================================================================
+#  Jasy Template
+#  Copyright 2013 Sebastian Fastner
+#--------------------------------------------------------------------------------------------------
+# Based upon
+#  Core - JavaScript Foundation
+#  Copyright 2010-2012 Zynga Inc.
+#  Copyright 2012-2013 Sebastian Werner
+#--------------------------------------------------------------------------------------------------
+#  Based on the work of:
+#  Hogan.JS by Twitter, Inc.
+#  https://github.com/twitter/hogan.js
+#  Licensed under the Apache License, Version 2.0
+#  http://www.apache.org/licenses/LICENSE-2.0
+#==================================================================================================
+#
 
-"use strict";
+__all__ = ["compile"]
 
-(function ()
-{
-	var escapeMatcher = /[\\\"\n\r]/g;
+import Parser
 
-	var escapeMap = {
-		"\\" : '\\\\',
-		"\"" : '\\\"',
-		"\n" : '\\n',
-		"\r" : '\\r'
-	};
+accessTags = [
+	"#",			# go into section / loop start 
+	"?",			# if / has
+	"^", 			# if not / has not
+	"$", 			# insert variable
+	"="			# insert raw / non escaped
+]
 
-	var escapeReplacer = function(str) {
-		return escapeMap[str];
-	};
+# Tags which support children
+innerTags = [
+	"#",
+	"?",
+	"^"
+]
 
-	var accessTags =
-	{
-		"#" : 1, // go into section / loop start
-		"?" : 1, // if / has
-		"^" : 1, // if not / has not
-		"$" : 1, // insert variable
-		"=" : 1  // insert raw / non escaped
-	};
-
-	// Tags which support children
-	var innerTags =
-	{
-		"#" : 1,
-		"?" : 1,
-		"^" : 1
-	};
-
-	function walk(node, labels, nostrip)
-	{
-		var code = '';
-
-		for (var i=0, l=node.length; i<l; i++)
-		{
-			var current = node[i];
-			var tag = current.tag;
-
-			if (tag == null)
-			{
-				code += 'buf+="' + current.replace(escapeMatcher, escapeReplacer) + '";';
-			}
-			else if (tag == '\n')
-			{
-				code += 'buf+="\\n";';
-			}
-			else
-			{
-				var name = current.name;
-				var escaped = name.replace(escapeMatcher, escapeReplacer);
-
-				if (tag in accessTags)
-				{
-					var accessor = name == "." ? 2 : ~name.indexOf('.') ? 1 : 0;
-					var accessorCode = '"' + escaped + '",' + accessor + ',data';
-
-					if (tag in innerTags) {
-						var innerCode = walk(current.nodes, labels, nostrip);
-					}
-
-					if (tag == '?') {
-						code += 'if(this._has(' + accessorCode + ')){' + innerCode + '}';
-					} else if (tag == '^') {
-						code += 'if(!this._has(' + accessorCode + ')){' + innerCode + '}';
-					} else if (tag == '#') {
-						code += 'this._section(' + accessorCode + ',partials,labels,function(data,partials,labels){' + innerCode + '});';
-					} else if (tag == '=') {
-						code += 'buf+=this._data(' + accessorCode + ');';
-					} else if (tag == '$') {
-						code += 'buf+=this._variable(' + accessorCode + ');';
-					}
-				}
-				else if (tag == '>')
-				{
-					code += 'buf+=this._partial("' + escaped + '",data,partials,labels);';
-				}
-				else if (tag == '_')
-				{
-					// Support either static labels and dynamic labels
-					var resolved = labels && labels[escaped];
-					if (typeof resolved == "string") {
-						code += walk(core.template.Parser.parse(resolved, true), labels);
-					} else {
-						code += 'buf+=this._label("' + escaped + '",data,partials,labels);';
-					}
-				}
-			}
-		}
-
-		return code;
-	}
+def escapeContent(content):
+	return content.replace("\"", "\\\"").replace("\n", "\\n")
 
 
-	/**
-	 * This is the Compiler of the template engine and transforms the token tree into a compiled template instance.
-	 */
-	core.Module("core.template.Compiler",
-	{
-		/**
-		 * {core.template.Template} Translates the @code {Array} tree from {core.template.Parser#parse} into actual JavaScript
-		 * code (in form of a {core.template.Template} instance) to insert dynamic data fields. It uses
-		 * the original @text {String} for template construction. There is also the possibility to inject
-		 * static @labels {Map} at compile time level or resolve them dynamically at every rendering.
-		 * Optionally you can keep white spaces (line breaks, leading, trailing, etc.) by
-		 * enabling @nostrip {Boolean?false}. Additionally one can define a template @name {String} for
-		 * improved debugging capabilities.
-		 */
-		compile : function(text, labels, nostrip, name)
-		{
-			var tree = core.template.Parser.parse(text, nostrip);
-			var wrapped = 'var buf="";' + walk(tree, labels, nostrip) + 'return buf;';
+def escapeMatcher(str):
+	return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\\n").replace("\r", "\\\r")
 
-			return new core.template.Template(new Function('data', 'partials', 'labels', wrapped), text, name);
-		}
-	});
-})();
+
+def walk(node, labels, nostrip):
+	code = ""
+
+	for current in node:
+		if type(current) == str:
+			code += 'buf+="' + escapeMatcher(current) + '";'
+		elif current["tag"] == "\n":
+			code += 'buf+="\\n";'
+		else:
+			tag = current["tag"]
+			name = current["name"]
+			escaped = escapeMatcher(name)
+
+			if tag in accessTags:
+				if name == ".":
+					accessor = 2
+				elif "." in name:
+					accessor = 1
+				else:
+					accessor = 0
+
+				accessorCode = '"' + escaped + '",' + str(accessor) + ',data'
+
+				if tag in innerTags:
+					innerCode = walk(current["nodes"], labels, nostrip)
+
+				if tag == "?":
+					code += 'if(this._has(' + accessorCode + ')){' + innerCode + '}'
+				elif tag == "^":
+					code += 'if(!this._has(' + accessorCode + ')){' + innerCode + '}'
+				elif tag == "#":
+					code += 'this._section(' + accessorCode + ',partials,labels,function(data,partials,labels){' + innerCode + '});'
+				elif tag == "=":
+					code += 'buf+=this._data(' + accessorCode + ');'
+				elif tag == "$":
+					code += 'buf+=this._variable(' + accessorCode + ');';
+
+			elif tag == ">":
+				code += 'buf+=this._partial("' + escaped + '",data,partials,labels);'
+			elif tag == "_":
+				if labels and escaped in labels:
+					code += walk(Parser.parse(labels[escaped], True), labels);
+				else:
+					code += 'buf+=this._label("' + escaped + '",data,partials,labels);'
+
+	return code
+
+
+def compile(text, labels=[], nostrip=False, name=None):
+	tree = Parser.parse(text, nostrip)
+	wrapped = escapeContent('var buf="";' + walk(tree, labels, nostrip) + 'return buf;');
+
+	if name:
+		name = escapeContent("\"%s\"" % name)
+	else:
+		name = "null"
+
+	text = escapeContent(text)
+
+	return "new core.template.Template(new Function('data', 'partials', 'labels', \"%s\"), \"%s\", %s);" % (wrapped, text, name)

@@ -68,22 +68,23 @@ def tokenize(text, nostrip=False):
 	splitted=re.split(tagSplitter, text)
 
 	for segment in splitted:
-		if segment[0] == "{":
-			matched = re.match(tagMatcher, segment)
-			if matched:
-				tag = matched.group(1) # || "$"
-				if not tag:
-					tag = "$"
-				if tag != "!":
-					tokens.append({
-						"tag": tag,
-						"name": matched.group(2)
-					})
+		if len(segment) > 0:
+			if segment[0] == "{":
+				matched = re.match(tagMatcher, segment)
+				if matched:
+					tag = matched.group(1) # || "$"
+					if not tag:
+						tag = "$"
+					if tag != "!":
+						tokens.append({
+							"tag": tag,
+							"name": matched.group(2)
+						})
 
+				elif segment != "":
+					tokens.append(segment)
 			elif segment != "":
 				tokens.append(segment)
-		elif segment != "":
-			tokens.append(segment)
 
 	return tokens
 
@@ -102,7 +103,5 @@ def tokenize(text, nostrip=False):
 # */
 def parse(text, nostrip=False):
 	""" Returns the token tree of the fiven template text """
-
+	print("-- parse --> ", text)
 	return buildTree(collections.deque(tokenize(text, nostrip)), collections.deque())
-
-#print(parse("das ist {{mich}} und das ist {{#dich}}blabla und {{.}} und {{name}} stop{{/dich}} hix"))
