@@ -48,11 +48,7 @@ def postscan():
 
 def templateFilter(text, item):
 	js = """
-		core.Module("%(name)s", {
-			get : function() {
-				return core.template.Compiler.compile("%(content)s");
-			}
-		});
+		core.Main.declareNamespace("%(name)s", core.template.Compiler.compile("%(content)s"));
 	""" % {
 		"name": item.getId(),
 		"content" : escapeContent(text)
