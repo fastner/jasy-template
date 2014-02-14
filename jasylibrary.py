@@ -24,6 +24,7 @@ class TemplateItem(jasy.item.Abstract.AbstractItem):
 		return ".".join(fileId)
 
 
+
 @postscan()
 def postscan():
 	virtualProject = session.getVirtualProject()
@@ -40,20 +41,25 @@ def postscan():
 
 				if cls.mtime != item.mtime:
 					cls.mtime = item.mtime
-					js = """
-						core.Module("%(name)s", {
-							get : function() {
-								return core.template.Compiler.compile("%(content)s");
-							}
-						});
-					""" % {
-						"name": item.getId(),
-						"content" : escapeContent(item.getText())
-					}
+					
+					cls.setTextFilter(templateFilter)
 
-					filePath = os.path.join(virtualProject.getPath(), "src", item.getId().replace(".", os.sep)) + ".js"
-					cls.saveText(js, filePath)
+					#filePath = os.path.join(virtualProject.getPath(), "src", item.getId().replace(".", os.sep)) + ".js"
+					#cls.saveText(js, filePath)
 
+
+def templateFilter(text, item):
+	js = """
+		core.Module("%(name)s", {
+			get : function() {
+				return core.template.Compiler.compile("%(content)s");
+			}
+		});
+	""" % {
+		"name": item.getId(),
+		"content" : escapeContent(text)
+	}
+	return js
 
 def escapeContent(content):
 	return content.replace("\"", "\\\"").replace("\n", "\\n")
