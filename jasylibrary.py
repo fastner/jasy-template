@@ -18,7 +18,7 @@ class TemplateItem(jasy.item.Abstract.AbstractItem):
 		fileId =  (fileId + os.path.splitext(relpath)[0]).replace("/", ".").split(".")
 
 		last = len(fileId) - 1
-		name = fileId[last] + "Template"
+		name = fileId[last]
 		fileId[last] = name[0].upper() + name[1:]
 		
 		return ".".join(fileId)
@@ -33,10 +33,10 @@ def postscan():
 		if items:
 			for name in items.keys():
 				item = items[name]
-				cls = virtualProject.getItem("jasy.Class", item.getId())
+				cls = virtualProject.getItem("jasy.Class", item.getId() + "Template")
 
 				if cls is None:
-					cls = jasy.item.Class.ClassItem(project, item.getId())
+					cls = jasy.item.Class.ClassItem(project, item.getId() + "Template")
 					virtualProject.addItem("jasy.Class", cls)
 
 				if cls.mtime != item.mtime:
