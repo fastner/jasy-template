@@ -18,7 +18,7 @@ class TemplateItem(jasy.item.Abstract.AbstractItem):
 		fileId =  (fileId + os.path.splitext(relpath)[0]).replace("/", ".").split(".")
 
 		last = len(fileId) - 1
-		name = fileId[last]
+		name = fileId[last] + "Template"
 		fileId[last] = name[0].upper() + name[1:]
 		
 		return ".".join(fileId)
@@ -41,11 +41,7 @@ def postscan():
 
 				if cls.mtime != item.mtime:
 					cls.mtime = item.mtime
-					
 					cls.setTextFilter(templateFilter)
-
-					#filePath = os.path.join(virtualProject.getPath(), "src", item.getId().replace(".", os.sep)) + ".js"
-					#cls.saveText(js, filePath)
 
 
 def templateFilter(text, item):
