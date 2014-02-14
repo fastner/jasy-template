@@ -39,9 +39,11 @@ def postscan():
 					cls = jasy.item.Class.ClassItem(project, item.getId() + "Template")
 					virtualProject.addItem("jasy.Class", cls)
 
+				cls.setTextFilter(templateFilter)
+
 				if cls.mtime != item.mtime:
 					cls.mtime = item.mtime
-					cls.setTextFilter(templateFilter)
+					cls.setText(item.getText())
 
 
 def templateFilter(text, item):
