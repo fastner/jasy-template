@@ -24,7 +24,6 @@ class TemplateItem(jasy.item.Abstract.AbstractItem):
 		return ".".join(fileId)
 
 
-
 @postscan()
 def postscan():
 	virtualProject = session.getVirtualProject()
@@ -33,27 +32,28 @@ def postscan():
 		if items:
 			for name in items.keys():
 				item = items[name]
-				cls = virtualProject.getItem("jasy.Class", item.getId() + "Template")
+				cls = virtualProject.getItem("jasy.Class", item.getId())
 
 				if cls is None:
-					cls = jasy.item.Class.ClassItem(project, item.getId() + "Template")
+					cls = jasy.item.Class.ClassItem(project, item.getId())
 					virtualProject.addItem("jasy.Class", cls)
-
-				cls.setTextFilter(templateFilter)
 
 				if cls.mtime != item.mtime:
 					cls.mtime = item.mtime
-					cls.setText(item.getText())
+					js = """
+						core.Module("%(name)s", {
+							get : function() {
+								return core.template.Compiler.compile("%(content)s");
+							}
+						});
+					""" % {
+						"name": item.getId(),
+						"content" : escapeContent(item.getText())
+					}
 
+					filePath = os.path.join(virtualProject.getPath(), "src", item.getId().replace(".", os.sep)) + ".js"
+					cls.saveText(js, filePath)
 
-def templateFilter(text, item):
-	js = """
-		core.Main.declareNamespace("%(name)s", core.template.Compiler.compile("%(content)s"));
-	""" % {
-		"name": item.getId(),
-		"content" : escapeContent(text)
-	}
-	return js
 
 def escapeContent(content):
 	return content.replace("\"", "\\\"").replace("\n", "\\n")
